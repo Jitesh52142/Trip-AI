@@ -10,6 +10,8 @@ Every concrete agent must:
      sibling agents directly (loose coupling principle).
 """
 
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any

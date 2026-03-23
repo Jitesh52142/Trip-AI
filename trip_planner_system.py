@@ -8,8 +8,10 @@ Supports two modes:
   2. Web mode  → called by Flask with data dict (skips UserAgent prompts)
 """
 
+from __future__ import annotations
+
 import sys
-from typing import Any, NamedTuple
+from typing import Any, Dict, List, NamedTuple
 
 from memory import SharedMemory
 from agents import (
@@ -66,8 +68,8 @@ class TripPlannerSystem:
         destination: str,
         budget: int,
         days: int,
-        preferences: list[str],
-    ) -> dict[str, Any]:
+        preferences: List[str],
+    ) -> Dict[str, Any]:
         """
         Run the full pipeline without interactive input.
 
@@ -198,7 +200,7 @@ class TripPlannerSystem:
     # Shared result builder
     # ------------------------------------------------------------------
 
-    def _build_result_dict(self) -> dict[str, Any]:
+    def _build_result_dict(self) -> Dict[str, Any]:
         """Convert current shared memory into a clean result dict."""
         mem = self._memory
         budget     = mem.get("budget", 0)

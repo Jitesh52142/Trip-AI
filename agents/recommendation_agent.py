@@ -4,7 +4,9 @@ agents/recommendation_agent.py
 Fetches places from the local dummy JSON, then uses Langchain and
 Gemini to smartly filter them based on user preferences.
 """
+from __future__ import annotations
 
+from typing import List
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
@@ -13,7 +15,7 @@ from agents.base_agent import BaseAgent
 from tools import RecommendationTool
 
 class PlacesOutput(BaseModel):
-    places: list[str] = Field(description="List of selected place names")
+    places: List[str] = Field(description="List of selected place names")
 
 class RecommendationAgent(BaseAgent):
     """
@@ -27,7 +29,7 @@ class RecommendationAgent(BaseAgent):
         )
         self._tool = RecommendationTool()
         try:
-            self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
             self.structured_llm = self.llm.with_structured_output(PlacesOutput)
         except Exception as e:
             self.structured_llm = None

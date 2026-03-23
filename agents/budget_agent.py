@@ -4,6 +4,7 @@ agents/budget_agent.py
 Calculates the estimated cost + validates budget.
 Uses LLM to provide a final friendly, human-like budget suggestion message.
 """
+from __future__ import annotations
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
@@ -26,7 +27,7 @@ class BudgetAgent(BaseAgent):
         )
         self._tool = BudgetTool()
         try:
-            self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
             self.structured_llm = self.llm.with_structured_output(BudgetOutput)
         except Exception as e:
             self.structured_llm = None

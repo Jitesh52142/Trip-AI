@@ -6,6 +6,7 @@ Centralized shared memory store for the multi-agent Trip Planner system.
 All agents read from and write to this single shared state dictionary.
 This simulates a global blackboard/memory in a real multi-agent system.
 """
+from __future__ import annotations
 
 from typing import Any
 

@@ -4,7 +4,9 @@ agents/planner_agent.py
 Generates a day-wise itinerary by distributing recommended places
 across the trip duration using LangChain and an LLM.
 """
+from __future__ import annotations
 
+from typing import List
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -14,10 +16,10 @@ from tools import ItineraryTool
 class DayPlan(BaseModel):
     day: int = Field(description="Day number")
     label: str = Field(description="Display label, e.g., 'Day 1'")
-    places: list[str] = Field(description="List of places to visit on this day from the context places")
+    places: List[str] = Field(description="List of places to visit on this day from the context places")
 
 class ItineraryOutput(BaseModel):
-    itinerary: list[DayPlan]
+    itinerary: List[DayPlan]
 
 class PlannerAgent(BaseAgent):
     """
@@ -31,7 +33,7 @@ class PlannerAgent(BaseAgent):
         )
         self._tool = ItineraryTool()
         try:
-            self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
             self.structured_llm = self.llm.with_structured_output(ItineraryOutput)
         except Exception as e:
             self.structured_llm = None

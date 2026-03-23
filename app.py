@@ -10,9 +10,9 @@ POST /plan      → Run the agent pipeline, redirect to results
 GET  /result    → Display the structured trip plan
 GET  /api/destinations  → JSON list of supported destinations
 """
+from __future__ import annotations
 
 import os
-import json
 import sys
 import warnings
 
@@ -27,15 +27,32 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from trip_planner_system import TripPlannerSystem
-from tools import RecommendationTool
-
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "trip-planner-secret-2026")
 
-# One shared system instance (stateless between requests — SharedMemory is reset each call)
-_system = TripPlannerSystem()
-_rec_tool = RecommendationTool()
+# ── Lazy singletons ──────────────────────────────────────────────────────────
+# We defer heavy imports until the first request so Vercel can import this
+# module successfully even before packages finish installing.
+_system = None
+_rec_tool = None
+
+
+def _get_system():
+    """Return (and lazily create) the TripPlannerSystem singleton."""
+    global _system
+    if _system is None:
+        from trip_planner_system import TripPlannerSystem
+        _system = TripPlannerSystem()
+    return _system
+
+
+def _get_rec_tool():
+    """Return (and lazily create) the RecommendationTool singleton."""
+    global _rec_tool
+    if _rec_tool is None:
+        from tools import RecommendationTool
+        _rec_tool = RecommendationTool()
+    return _rec_tool
 
 
 # --------------------------------------------------------------------
@@ -45,7 +62,7 @@ _rec_tool = RecommendationTool()
 @app.route("/")
 def index():
     """Render the trip planning form."""
-    destinations = _rec_tool.get_supported_destinations()
+    destinations = _get_rec_tool().get_supported_destinations()
     return render_template("index.html", destinations=destinations)
 
 
@@ -56,10 +73,10 @@ def index():
 @app.route("/plan", methods=["POST"])
 def plan():
     """Collect form data, run the agent pipeline, store result in session."""
-    destination  = request.form.get("destination", "").strip()
-    budget_raw   = request.form.get("budget", "0").strip()
-    days_raw     = request.form.get("days", "0").strip()
-    prefs_raw    = request.form.get("preferences", "").strip()
+    destination = request.form.get("destination", "").strip()
+    budget_raw  = request.form.get("budget", "0").strip()
+    days_raw    = request.form.get("days", "0").strip()
+    prefs_raw   = request.form.get("preferences", "").strip()
 
     # Basic server-side validation
     errors = []
@@ -83,27 +100,40 @@ def plan():
         errors.append("Please select a destination.")
 
     if errors:
-        destinations = _rec_tool.get_supported_destinations()
-        return render_template("index.html", destinations=destinations, errors=errors,
-                               prev={"destination": destination, "budget": budget_raw,
-                                     "days": days_raw, "preferences": prefs_raw})
+        destinations = _get_rec_tool().get_supported_destinations()
+        return render_template(
+            "index.html", destinations=destinations, errors=errors,
+            prev={"destination": destination, "budget": budget_raw,
+                  "days": days_raw, "preferences": prefs_raw}
+        )
 
     preferences = [p.strip() for p in prefs_raw.split(",") if p.strip()] if prefs_raw else []
 
     # Run the agent pipeline
-    result = _system.run_with_data(
-        destination=destination,
-        budget=budget,
-        days=days,
-        preferences=preferences,
-    )
+    try:
+        result = _get_system().run_with_data(
+            destination=destination,
+            budget=budget,
+            days=days,
+            preferences=preferences,
+        )
+    except Exception as exc:
+        destinations = _get_rec_tool().get_supported_destinations()
+        return render_template(
+            "index.html", destinations=destinations,
+            errors=[f"Internal error: {exc}"],
+            prev={"destination": destination, "budget": budget_raw,
+                  "days": days_raw, "preferences": prefs_raw}
+        )
 
     if not result.get("success"):
-        destinations = _rec_tool.get_supported_destinations()
-        return render_template("index.html", destinations=destinations,
-                               errors=[result.get("error", "An unknown error occurred.")],
-                               prev={"destination": destination, "budget": budget_raw,
-                                     "days": days_raw, "preferences": prefs_raw})
+        destinations = _get_rec_tool().get_supported_destinations()
+        return render_template(
+            "index.html", destinations=destinations,
+            errors=[result.get("error", "An unknown error occurred.")],
+            prev={"destination": destination, "budget": budget_raw,
+                  "days": days_raw, "preferences": prefs_raw}
+        )
 
     # Store in session for the result page
     session["trip_result"] = result
@@ -131,8 +161,18 @@ def result():
 def api_destinations():
     """Return supported destinations as JSON."""
     return jsonify({
-        "destinations": _rec_tool.get_supported_destinations()
+        "destinations": _get_rec_tool().get_supported_destinations()
     })
+
+
+# --------------------------------------------------------------------
+# Health-check (useful for Vercel cold-start debugging)
+# --------------------------------------------------------------------
+
+@app.route("/health")
+def health():
+    """Simple health check endpoint."""
+    return jsonify({"status": "ok", "service": "trip-planner"})
 
 
 # --------------------------------------------------------------------
