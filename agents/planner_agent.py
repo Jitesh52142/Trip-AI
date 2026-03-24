@@ -58,7 +58,11 @@ class PlannerAgent(BaseAgent):
             f"You are a local guide for {destination}.\n"
             f"Here are the places the user wants to visit: {places}\n"
             f"The trip length is {days} days.\n"
-            f"Split the places across the {days} days intuitively (max 3-4 places per day)."
+            f"Split the places across the {days} days intuitively (max 3-4 places per day).\n"
+            f"IMPORTANT RULES:\n"
+            f"- DO NOT repeat or duplicate the same place across different days.\n"
+            f"- DO NOT invent new places. Only use the places from the list provided.\n"
+            f"- If there are fewer places than days (e.g. 5 days but only 2 places), add 'Leisure / Explore Local Area' to fill the remaining days."
         )
 
         try:

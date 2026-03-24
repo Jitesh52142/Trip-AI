@@ -85,31 +85,27 @@ class ItineraryTool:
     def _cap_places(self, places: list, days: int) -> list:
         """
         Return at most ``MAX_PLACES_PER_DAY × days`` places.
-        If fewer places are available they are cycled to fill the days.
+        Do not falsely cycle/repeat the places if there are fewer.
         """
         max_places = self.MAX_PLACES_PER_DAY * days
-        if len(places) >= max_places:
-            return list(places[:max_places])
-
-        # Cycle places to ensure every day has at least one entry
-        cycled: list = []
-        while len(cycled) < max_places:
-            cycled.extend(places)
-        return list(cycled[:max_places])
+        return list(places[:max_places])
 
     def _split_into_chunks(
         self, places: list, days: int
     ) -> list:
         """
-        Split *places* into *days* chunks as evenly as possible.
-
-        Example: 5 places, 3 days → [2, 2, 1]
+        Split *places* into exactly *days* chunks using round-robin.
+        If any chunk is empty, fill it with a placeholder.
         """
-        chunk_size = math.ceil(len(places) / days)
-        return [
-            list(places[i : i + chunk_size])
-            for i in range(0, len(places), chunk_size)
-        ][:days]
+        chunks = [[] for _ in range(days)]
+        for i, place in enumerate(places):
+            chunks[i % days].append(place)
+            
+        for day_idx in range(days):
+            if not chunks[day_idx]:
+                chunks[day_idx].append("Leisure / Explore Local Area")
+                
+        return chunks
 
     # ------------------------------------------------------------------
     # Formatting helper
