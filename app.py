@@ -70,9 +70,11 @@ def index():
 # Plan submission
 # --------------------------------------------------------------------
 
-@app.route("/plan", methods=["POST"])
+@app.route("/plan", methods=["GET", "POST"])
 def plan():
-    """Collect form data, run the agent pipeline, store result in session."""
+    """Collect form data, run the agent pipeline, and return the result."""
+    if request.method == "GET":
+        return redirect(url_for("index"))
     destination = request.form.get("destination", "").strip()
     budget_raw  = request.form.get("budget", "0").strip()
     days_raw    = request.form.get("days", "0").strip()
@@ -135,9 +137,8 @@ def plan():
                   "days": days_raw, "preferences": prefs_raw}
         )
 
-    # Store in session for the result page
-    session["trip_result"] = result
-    return redirect(url_for("result"))
+    # Render the result directly instead of using session (avoids 4KB cookie limit)
+    return render_template("result.html", trip=result)
 
 
 # --------------------------------------------------------------------
