@@ -34,11 +34,34 @@ multiagentic/
 
 ## 🚀 How to Run
 
+**1. Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**2. Run the Web Application (Recommended)**
+```bash
+python app.py
+```
+Then open `http://localhost:5000` in your browser.
+
+**3. Run the CLI Version**
 ```bash
 python main.py
 ```
 
-No external dependencies — uses only the Python standard library.
+---
+
+## 🔄 User Flow
+
+1. **User Landing (`GET /`)**: The user navigates to the homepage (`index.html`) which presents a form with supported destinations.
+2. **Input Submission (`POST /plan`)**: The user submits their trip details (destination, budget, duration, preferences).
+3. **Agent Pipeline Execution**:
+   - **`UserAgent`**: Validates and initialises input in `SharedMemory`.
+   - **`RecommendationAgent`**: Recommends places matching the destination and preferences.
+   - **`PlannerAgent`**: Distributes places evenly across days to create a day-wise itinerary.
+   - **`BudgetAgent`**: Computes costs and checks status against the user's budget.
+4. **Results Display (`GET /result`)**: The user sees the results page (`result.html`) displaying the structured trip plan, itinerary, and budget summary.
 
 ---
 
